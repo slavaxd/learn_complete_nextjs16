@@ -1,34 +1,36 @@
 'use client';
 
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useLayoutEffect, useState } from 'react';
 
-export const ThemeContext = createContext();
+export const ThemeContext = createContext(null);
 
 export default function ThemeProvider({ children }) {
   const [theme, setTheme] = useState('dark');
 
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  },[])
+  useLayoutEffect(() => {
+    // Initialize theme based on document class
+    const isDark = document.documentElement.classList.contains('dark');
+    setTheme(isDark ? 'dark' : 'light');
+
+    // Mark theme as ready to prevent FOUC
+    document.documentElement.classList.add('theme-ready');
+  }, []);
 
   const toggleTheme = () => {
     setTheme(prev => {
-      const next = prev === 'light' ? 'dark' : 'light';
+      const next = prev === 'dark' ? 'light' : 'dark';
 
-      if (next === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      document.documentElement.classList.toggle('dark', next === 'dark');
+
+      document.cookie = `theme=${next}; path=/; max-age=31536000`; // 1 year
 
       return next;
-    })
+    });
   };
 
   return (
-    <ThemeContext value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
-    </ThemeContext>
-  )
-
+    </ThemeContext.Provider>
+  );
 }
